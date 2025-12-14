@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { Send, Loader2, AlertCircle, CheckCircle2 } from 'lucide-react';
+import { Send, Loader2, AlertCircle, CheckCircle2, Quote } from 'lucide-react';
 import { analyzeText } from '../services/geminiService';
 import { AnalysisResult, SentimentType } from '../types';
 import { EmergencyPanel } from './EmergencyPanel';
@@ -43,6 +43,37 @@ export const TextAnalyzer: React.FC<TextAnalyzerProps> = ({ onAnalyzeComplete, i
       case SentimentType.NEGATIVE: return 'text-red-400 border-red-500/50 bg-red-500/10';
       default: return 'text-yellow-400 border-yellow-500/50 bg-yellow-500/10';
     }
+  };
+
+  const renderHighlightedText = (text: string, keywords: string[]) => {
+    if (!keywords || keywords.length === 0) return text;
+
+    // Sort keywords by length descending to match longest phrases first
+    const uniqueKeywords = Array.from(new Set(keywords)).sort((a, b) => b.length - a.length);
+    if (uniqueKeywords.length === 0) return text;
+
+    // Escape special regex characters
+    const escapedKeywords = uniqueKeywords.map(k => k.replace(/[.*+?^${}()|[\]\\]/g, '\\$&'));
+    const pattern = new RegExp(`(${escapedKeywords.join('|')})`, 'gi');
+
+    const parts = text.split(pattern);
+
+    return parts.map((part, index) => {
+      // Check if this part matches any keyword (case-insensitive)
+      const isKeyword = uniqueKeywords.some(k => k.toLowerCase() === part.toLowerCase());
+      
+      if (isKeyword) {
+        return (
+          <span 
+            key={index} 
+            className="bg-white/10 px-1 py-0.5 rounded font-bold border-b-2 border-current shadow-[0_0_10px_rgba(255,255,255,0.1)]"
+          >
+            {part}
+          </span>
+        );
+      }
+      return part;
+    });
   };
 
   return (
@@ -96,6 +127,17 @@ export const TextAnalyzer: React.FC<TextAnalyzerProps> = ({ onAnalyzeComplete, i
           </div>
           
           <div className="space-y-4">
+            {/* Highlighted Transcript/Text */}
+            <div className="bg-black/20 rounded-xl p-4 border border-white/5">
+                <div className="flex items-center gap-2 mb-2 opacity-80">
+                  <Quote className="w-4 h-4" />
+                  <h4 className="text-sm font-semibold uppercase tracking-wide">Input Analysis</h4>
+                </div>
+                <p className="opacity-90 leading-relaxed text-lg whitespace-pre-wrap">
+                  {renderHighlightedText(result.transcript || input, result.keywords)}
+                </p>
+            </div>
+
             <div className="bg-black/20 rounded-xl p-4">
               <h4 className="text-sm font-semibold mb-2 opacity-90">Analysis</h4>
               <p className="opacity-80 leading-relaxed">{result.explanation}</p>

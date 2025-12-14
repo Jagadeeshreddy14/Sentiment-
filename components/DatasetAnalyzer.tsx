@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { Upload, FileText, Play, Loader2, Download, Filter, X, RefreshCcw, Trash2, PieChart as PieChartIcon, CheckCircle2, AlertCircle, HelpCircle } from 'lucide-react';
+import { Upload, FileText, Play, Loader2, Download, Filter, X, RefreshCcw, Trash2, PieChart as PieChartIcon, CheckCircle2, AlertCircle, HelpCircle, Search } from 'lucide-react';
 import { PieChart, Pie, Cell, ResponsiveContainer, Tooltip, Legend } from 'recharts';
 import { analyzeBatch } from '../services/geminiService';
 import { DatasetRow, SentimentType } from '../types';
@@ -21,6 +21,7 @@ export const DatasetAnalyzer: React.FC<DatasetAnalyzerProps> = ({ onAnalyzeCompl
   const [analyzing, setAnalyzing] = useState(false);
   const [progress, setProgress] = useState(0);
   const [filter, setFilter] = useState<SentimentType | null>(null);
+  const [searchQuery, setSearchQuery] = useState('');
 
   useEffect(() => {
     if (initialState?.input) {
@@ -48,6 +49,7 @@ export const DatasetAnalyzer: React.FC<DatasetAnalyzerProps> = ({ onAnalyzeCompl
       }));
       setData(parsedData);
       setFilter(null);
+      setSearchQuery('');
       setProgress(0);
     };
     reader.readAsText(file);
@@ -57,6 +59,7 @@ export const DatasetAnalyzer: React.FC<DatasetAnalyzerProps> = ({ onAnalyzeCompl
     setData([]);
     setFileName(null);
     setFilter(null);
+    setSearchQuery('');
     setProgress(0);
   };
 
@@ -140,7 +143,13 @@ export const DatasetAnalyzer: React.FC<DatasetAnalyzerProps> = ({ onAnalyzeCompl
     { name: SentimentType.NEUTRAL, value: stats[SentimentType.NEUTRAL] },
   ].filter(d => d.value > 0);
 
-  const filteredData = filter ? data.filter(d => d.result?.sentiment === filter) : data;
+  const filteredData = data.filter(d => {
+    const matchesSentiment = filter ? d.result?.sentiment === filter : true;
+    const matchesSearch = searchQuery 
+      ? d.text.toLowerCase().includes(searchQuery.toLowerCase()) 
+      : true;
+    return matchesSentiment && matchesSearch;
+  });
 
   return (
     <div className="max-w-7xl mx-auto space-y-6">
@@ -254,18 +263,38 @@ export const DatasetAnalyzer: React.FC<DatasetAnalyzerProps> = ({ onAnalyzeCompl
 
         {/* Right Column: Data Table */}
         <div className="lg:col-span-2 bg-card rounded-2xl shadow-lg border border-white/5 flex flex-col h-[600px]">
-          <div className="p-6 border-b border-white/5 flex items-center justify-between">
+          <div className="p-6 border-b border-white/5 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
             <h2 className="text-lg font-semibold text-white flex items-center gap-2">
               <span className="bg-blue-500/20 p-2 rounded-lg text-blue-400">📊</span>
               Analysis Results
             </h2>
-            <div className="flex gap-2">
+            
+            <div className="flex items-center gap-2 w-full sm:w-auto">
+               <div className="relative flex-1 sm:w-64">
+                  <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-500" />
+                  <input 
+                    type="text" 
+                    placeholder="Search text..." 
+                    value={searchQuery}
+                    onChange={(e) => setSearchQuery(e.target.value)}
+                    className="w-full bg-darker/50 border border-white/10 rounded-lg pl-9 pr-8 py-2 text-sm text-gray-200 focus:border-primary/50 outline-none transition-colors placeholder-gray-600"
+                  />
+                  {searchQuery && (
+                    <button 
+                      onClick={() => setSearchQuery('')}
+                      className="absolute right-2 top-1/2 -translate-y-1/2 p-1 text-gray-500 hover:text-white"
+                    >
+                      <X className="w-3 h-3" />
+                    </button>
+                  )}
+               </div>
+               
                {filter && (
                  <button 
                    onClick={() => setFilter(null)}
-                   className="flex items-center gap-1 text-xs px-3 py-1 bg-white/10 hover:bg-white/20 rounded-full transition-colors"
+                   className="flex items-center gap-1 text-xs px-3 py-2 bg-white/10 hover:bg-white/20 rounded-lg transition-colors whitespace-nowrap text-gray-300"
                  >
-                   Clear Filter <X className="w-3 h-3" />
+                   Clear <X className="w-3 h-3" />
                  </button>
                )}
             </div>
