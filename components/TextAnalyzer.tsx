@@ -2,6 +2,7 @@ import React, { useState } from 'react';
 import { Send, Loader2, AlertCircle, CheckCircle2 } from 'lucide-react';
 import { analyzeText } from '../services/geminiService';
 import { AnalysisResult, SentimentType } from '../types';
+import { EmergencyPanel } from './EmergencyPanel';
 
 export const TextAnalyzer: React.FC = () => {
   const [input, setInput] = useState('');
@@ -99,6 +100,11 @@ export const TextAnalyzer: React.FC = () => {
               </div>
             )}
           </div>
+          
+          {/* Emergency Panel for Negative Sentiment */}
+          {result.sentiment === SentimentType.NEGATIVE && (
+            <EmergencyPanel contextText={input} />
+          )}
         </div>
       )}
     </div>

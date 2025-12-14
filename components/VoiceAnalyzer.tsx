@@ -2,6 +2,7 @@ import React, { useState, useRef } from 'react';
 import { Mic, Square, Upload, Loader2, Volume2 } from 'lucide-react';
 import { analyzeAudio } from '../services/geminiService';
 import { AnalysisResult, SentimentType } from '../types';
+import { EmergencyPanel } from './EmergencyPanel';
 
 export const VoiceAnalyzer: React.FC = () => {
   const [isRecording, setIsRecording] = useState(false);
@@ -192,6 +193,11 @@ export const VoiceAnalyzer: React.FC = () => {
               </div>
             )}
           </div>
+          
+           {/* Emergency Panel for Negative Sentiment */}
+          {result.sentiment === SentimentType.NEGATIVE && (
+            <EmergencyPanel contextText={result.explanation} />
+          )}
         </div>
       )}
     </div>

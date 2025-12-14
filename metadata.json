@@ -2,6 +2,7 @@
   "name": "SentiMind AI",
   "description": "Advanced Sentiment Analysis dashboard using Gemini 2.5 Flash. Supports text, voice recordings, and batch dataset analysis with visualization.",
   "requestFramePermissions": [
-    "microphone"
+    "microphone",
+    "geolocation"
   ]
 }
