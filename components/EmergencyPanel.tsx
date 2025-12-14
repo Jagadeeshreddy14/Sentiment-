@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { Siren, Ambulance, ShieldAlert, MapPin, Send, Phone, MessageSquare } from 'lucide-react';
+import { Siren, Ambulance, ShieldAlert, MapPin, Send, MessageSquare } from 'lucide-react';
 
 interface EmergencyPanelProps {
   contextText: string;
@@ -9,12 +9,20 @@ export const EmergencyPanel: React.FC<EmergencyPanelProps> = ({ contextText }) =
   const [location, setLocation] = useState<{ lat: number; lng: number } | null>(null);
   const [locLoading, setLocLoading] = useState(false);
   const [locError, setLocError] = useState<string | null>(null);
-  const [adminNumber, setAdminNumber] = useState('8074563501'); // Default updated to user request
+  const [adminNumber, setAdminNumber] = useState('8074563501'); 
 
   useEffect(() => {
     // Auto-fetch location on mount
     setLocLoading(true);
+    setLocError(null);
+
     if ('geolocation' in navigator) {
+      const options = {
+        enableHighAccuracy: true,
+        timeout: 5000,
+        maximumAge: 0
+      };
+
       navigator.geolocation.getCurrentPosition(
         (position) => {
           setLocation({
@@ -24,13 +32,30 @@ export const EmergencyPanel: React.FC<EmergencyPanelProps> = ({ contextText }) =
           setLocLoading(false);
         },
         (error) => {
-          console.error("Location error:", error);
-          setLocError("Location access denied or unavailable.");
+          console.error("Location error details:", error.message); // Log string message
+          
+          let errorMessage = "Location unavailable.";
+          switch(error.code) {
+            case error.PERMISSION_DENIED:
+              errorMessage = "Permission denied. Please enable location.";
+              break;
+            case error.POSITION_UNAVAILABLE:
+              errorMessage = "Location signal unavailable.";
+              break;
+            case error.TIMEOUT:
+              errorMessage = "Location request timed out.";
+              break;
+            default:
+              errorMessage = "Unknown location error.";
+          }
+          
+          setLocError(errorMessage);
           setLocLoading(false);
-        }
+        },
+        options
       );
     } else {
-      setLocError("Geolocation not supported.");
+      setLocError("Geolocation not supported by browser.");
       setLocLoading(false);
     }
   }, []);
@@ -84,7 +109,7 @@ export const EmergencyPanel: React.FC<EmergencyPanelProps> = ({ contextText }) =
               Location Secured: <span className="font-mono text-xs opacity-75">{location.lat.toFixed(4)}, {location.lng.toFixed(4)}</span>
             </span>
           ) : (
-            <span className="text-red-400">{locError || "Location unavailable"}</span>
+            <span className="text-red-400">{locError}</span>
           )}
         </div>
 
