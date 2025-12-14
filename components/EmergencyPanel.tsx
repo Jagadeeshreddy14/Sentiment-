@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { Siren, Ambulance, ShieldAlert, MapPin, Send, MessageSquare } from 'lucide-react';
+import { Siren, Ambulance, ShieldAlert, MapPin, Send, MessageSquare, RefreshCw } from 'lucide-react';
 
 interface EmergencyPanelProps {
   contextText: string;
@@ -11,15 +11,14 @@ export const EmergencyPanel: React.FC<EmergencyPanelProps> = ({ contextText }) =
   const [locError, setLocError] = useState<string | null>(null);
   const [adminNumber, setAdminNumber] = useState('8074563501'); 
 
-  useEffect(() => {
-    // Auto-fetch location on mount
+  const fetchLocation = () => {
     setLocLoading(true);
     setLocError(null);
 
     if ('geolocation' in navigator) {
       const options = {
         enableHighAccuracy: true,
-        timeout: 5000,
+        timeout: 20000, // Increased to 20s to prevent premature timeouts
         maximumAge: 0
       };
 
@@ -32,12 +31,12 @@ export const EmergencyPanel: React.FC<EmergencyPanelProps> = ({ contextText }) =
           setLocLoading(false);
         },
         (error) => {
-          console.error("Location error details:", error.message); // Log string message
+          console.error("Location error details:", error.message); 
           
           let errorMessage = "Location unavailable.";
           switch(error.code) {
             case error.PERMISSION_DENIED:
-              errorMessage = "Permission denied. Please enable location.";
+              errorMessage = "Permission denied. Enable location.";
               break;
             case error.POSITION_UNAVAILABLE:
               errorMessage = "Location signal unavailable.";
@@ -58,6 +57,10 @@ export const EmergencyPanel: React.FC<EmergencyPanelProps> = ({ contextText }) =
       setLocError("Geolocation not supported by browser.");
       setLocLoading(false);
     }
+  };
+
+  useEffect(() => {
+    fetchLocation();
   }, []);
 
   const getMessageBody = () => {
@@ -100,16 +103,27 @@ export const EmergencyPanel: React.FC<EmergencyPanelProps> = ({ contextText }) =
 
       <div className="space-y-4">
         {/* Location Status */}
-        <div className="flex items-center gap-2 text-sm bg-black/20 p-3 rounded-lg border border-red-500/10">
-          <MapPin className={`w-4 h-4 ${location ? 'text-green-400' : 'text-gray-400'}`} />
-          {locLoading ? (
-            <span className="text-gray-400">Fetching current location...</span>
-          ) : location ? (
-            <span className="text-gray-200">
-              Location Secured: <span className="font-mono text-xs opacity-75">{location.lat.toFixed(4)}, {location.lng.toFixed(4)}</span>
-            </span>
-          ) : (
-            <span className="text-red-400">{locError}</span>
+        <div className="flex items-center justify-between gap-2 text-sm bg-black/20 p-3 rounded-lg border border-red-500/10">
+          <div className="flex items-center gap-2">
+            <MapPin className={`w-4 h-4 ${location ? 'text-green-400' : 'text-gray-400'}`} />
+            {locLoading ? (
+              <span className="text-gray-400">Fetching current location...</span>
+            ) : location ? (
+              <span className="text-gray-200">
+                Location Secured: <span className="font-mono text-xs opacity-75">{location.lat.toFixed(4)}, {location.lng.toFixed(4)}</span>
+              </span>
+            ) : (
+              <span className="text-red-400">{locError}</span>
+            )}
+          </div>
+          {(!location || locError) && !locLoading && (
+            <button 
+              onClick={fetchLocation} 
+              className="p-1.5 hover:bg-white/10 rounded-full transition-colors text-red-300"
+              title="Retry Location"
+            >
+              <RefreshCw className="w-4 h-4" />
+            </button>
           )}
         </div>
 
