@@ -58,7 +58,7 @@ export const TextAnalyzer: React.FC = () => {
             className="flex items-center gap-2 bg-gradient-to-r from-primary to-secondary hover:opacity-90 disabled:opacity-50 disabled:cursor-not-allowed text-white px-6 py-2.5 rounded-lg font-medium transition-all shadow-lg shadow-primary/25"
           >
             {loading ? <Loader2 className="animate-spin w-5 h-5" /> : <Send className="w-5 h-5" />}
-            {loading ? 'Analyzing...' : 'Analyze Sentiment'}
+            {loading ? 'Processing...' : 'Analyze Sentiment'}
           </button>
         </div>
       </div>
@@ -76,8 +76,8 @@ export const TextAnalyzer: React.FC = () => {
               </div>
             </div>
             <div className="text-right">
-              <span className="text-xs uppercase tracking-wider opacity-60">Model</span>
-              <div className="font-mono text-sm">Gemini 2.5 Flash</div>
+              <span className="text-xs uppercase tracking-wider opacity-60">Engine</span>
+              <div className="font-mono text-sm">Python (BERT)</div>
             </div>
           </div>
           

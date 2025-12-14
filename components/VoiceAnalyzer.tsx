@@ -155,7 +155,7 @@ export const VoiceAnalyzer: React.FC = () => {
                     className="flex items-center gap-2 bg-secondary hover:bg-secondary/90 text-white px-6 py-2 rounded-lg font-medium transition-all shadow-lg shadow-secondary/25"
                   >
                     {loading ? <Loader2 className="animate-spin w-5 h-5" /> : null}
-                    {loading ? 'Analyzing Voice...' : 'Analyze Voice'}
+                    {loading ? 'Processing...' : 'Analyze Voice'}
                   </button>
                </div>
              </div>
@@ -173,8 +173,8 @@ export const VoiceAnalyzer: React.FC = () => {
                 <p className="text-sm opacity-80 mt-1">Tone Confidence: {(result.score * 100).toFixed(1)}%</p>
              </div>
              <div className="text-right">
-              <span className="text-xs uppercase tracking-wider opacity-60">Model</span>
-              <div className="font-mono text-sm">Gemini 2.5 Flash</div>
+              <span className="text-xs uppercase tracking-wider opacity-60">Engine</span>
+              <div className="font-mono text-sm">Python (Speech/BERT)</div>
             </div>
           </div>
           

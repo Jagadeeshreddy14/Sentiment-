@@ -47,12 +47,12 @@ export const Layout: React.FC<LayoutProps> = ({ currentMode, setMode, children }
 
         <div className="absolute bottom-0 w-full md:w-64 p-6 border-t border-white/5">
           <div className="bg-gradient-to-br from-indigo-900/50 to-purple-900/50 p-4 rounded-xl border border-white/10">
-            <h4 className="text-xs font-semibold uppercase text-indigo-300 mb-1">Powered By</h4>
+            <h4 className="text-xs font-semibold uppercase text-indigo-300 mb-1">Architecture</h4>
             <div className="flex items-center gap-2">
-               <span className="text-sm font-bold text-white">Gemini 2.5 Flash</span>
+               <span className="text-sm font-bold text-white">Python + BERT</span>
             </div>
             <p className="text-[10px] text-indigo-200/60 mt-2 leading-relaxed">
-              Replacing legacy BERT models with state-of-the-art multimodal LLM capabilities.
+              Powered by Python backend algorithms using BERT Transformers for advanced NLU.
             </p>
           </div>
         </div>
