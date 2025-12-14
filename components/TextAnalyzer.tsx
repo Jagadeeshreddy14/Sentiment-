@@ -1,13 +1,26 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { Send, Loader2, AlertCircle, CheckCircle2 } from 'lucide-react';
 import { analyzeText } from '../services/geminiService';
 import { AnalysisResult, SentimentType } from '../types';
 import { EmergencyPanel } from './EmergencyPanel';
 
-export const TextAnalyzer: React.FC = () => {
+interface TextAnalyzerProps {
+  onAnalyzeComplete: (input: string, result: AnalysisResult) => void;
+  initialState?: { input: string, result: AnalysisResult };
+}
+
+export const TextAnalyzer: React.FC<TextAnalyzerProps> = ({ onAnalyzeComplete, initialState }) => {
   const [input, setInput] = useState('');
   const [loading, setLoading] = useState(false);
   const [result, setResult] = useState<AnalysisResult | null>(null);
+
+  // Load initial state if provided (from history)
+  useEffect(() => {
+    if (initialState) {
+      setInput(initialState.input);
+      setResult(initialState.result);
+    }
+  }, [initialState]);
 
   const handleAnalyze = async () => {
     if (!input.trim()) return;
@@ -15,6 +28,7 @@ export const TextAnalyzer: React.FC = () => {
     try {
       const data = await analyzeText(input);
       setResult(data);
+      onAnalyzeComplete(input, data);
     } catch (error) {
       console.error(error);
       alert("Failed to analyze text. Please check your API key.");

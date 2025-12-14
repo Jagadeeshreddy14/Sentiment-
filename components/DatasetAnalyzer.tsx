@@ -1,13 +1,25 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { Upload, FileText, Play, Loader2, Download } from 'lucide-react';
 import { PieChart, Pie, Cell, ResponsiveContainer, Tooltip as RechartsTooltip, Legend, BarChart, Bar, XAxis, YAxis, CartesianGrid } from 'recharts';
 import { analyzeBatch } from '../services/geminiService';
 import { DatasetRow, SentimentType, ChartDataPoint } from '../types';
 
-export const DatasetAnalyzer: React.FC = () => {
+interface DatasetAnalyzerProps {
+  onAnalyzeComplete: (data: DatasetRow[]) => void;
+  initialState?: { input: DatasetRow[], result: any };
+}
+
+export const DatasetAnalyzer: React.FC<DatasetAnalyzerProps> = ({ onAnalyzeComplete, initialState }) => {
   const [data, setData] = useState<DatasetRow[]>([]);
   const [analyzing, setAnalyzing] = useState(false);
   const [progress, setProgress] = useState(0);
+
+  // Load from history
+  useEffect(() => {
+    if (initialState) {
+      setData(initialState.input);
+    }
+  }, [initialState]);
 
   const handleFileUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
@@ -26,6 +38,37 @@ export const DatasetAnalyzer: React.FC = () => {
       setData(parsedData);
     };
     reader.readAsText(file);
+  };
+
+  const handleDownloadCSV = () => {
+    if (data.length === 0) return;
+
+    // Headers
+    const headers = ['ID', 'Text', 'Sentiment', 'Confidence', 'Keywords', 'Explanation'];
+    
+    // Rows
+    const rows = data.map(row => {
+      const result = row.result;
+      return [
+        row.id + 1,
+        `"${row.text.replace(/"/g, '""')}"`, // Escape quotes and wrap in quotes
+        result ? result.sentiment : 'Pending',
+        result ? (result.score * 100).toFixed(1) + '%' : '',
+        result ? `"${result.keywords.join(', ').replace(/"/g, '""')}"` : '',
+        result ? `"${result.explanation.replace(/"/g, '""')}"` : ''
+      ].join(',');
+    });
+
+    const csvContent = [headers.join(','), ...rows].join('\n');
+    const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
+    const url = URL.createObjectURL(blob);
+    const link = document.createElement('a');
+    link.setAttribute('href', url);
+    link.setAttribute('download', `sentiment_analysis_results_${Date.now()}.csv`);
+    link.style.visibility = 'hidden';
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
   };
 
   const runBatchAnalysis = async () => {
@@ -58,6 +101,7 @@ export const DatasetAnalyzer: React.FC = () => {
     }
 
     setAnalyzing(false);
+    onAnalyzeComplete(newData);
   };
 
   const getChartData = (): ChartDataPoint[] => {
@@ -200,7 +244,10 @@ export const DatasetAnalyzer: React.FC = () => {
           <div className="p-4 border-b border-white/5 flex justify-between items-center">
             <h3 className="font-semibold text-white">Raw Data Results</h3>
             {hasResults && (
-              <button className="flex items-center gap-2 text-sm text-blue-400 hover:text-blue-300">
+              <button 
+                onClick={handleDownloadCSV}
+                className="flex items-center gap-2 text-sm text-blue-400 hover:text-blue-300 transition-colors"
+              >
                 <Download className="w-4 h-4" /> Export CSV
               </button>
             )}

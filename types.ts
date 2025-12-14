@@ -24,3 +24,14 @@ export interface ChartDataPoint {
   value: number;
   fill: string;
 }
+
+export interface HistoryItem {
+  id: string;
+  timestamp: number;
+  mode: AnalyzerMode;
+  summary: string;
+  data: {
+    input: any;
+    result: any;
+  };
+}
