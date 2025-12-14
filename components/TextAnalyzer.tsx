@@ -117,7 +117,7 @@ export const TextAnalyzer: React.FC<TextAnalyzerProps> = ({ onAnalyzeComplete, i
           
           {/* Emergency Panel for Negative Sentiment */}
           {result.sentiment === SentimentType.NEGATIVE && (
-            <EmergencyPanel contextText={input} />
+            <EmergencyPanel contextText={input} category={result.emergencyCategory} />
           )}
         </div>
       )}

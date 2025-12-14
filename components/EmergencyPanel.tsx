@@ -1,11 +1,13 @@
 import React, { useState, useEffect } from 'react';
-import { Siren, Ambulance, ShieldAlert, MapPin, Send, MessageSquare, RefreshCw, Edit2, Check, X } from 'lucide-react';
+import { Siren, Ambulance, ShieldAlert, MapPin, Send, MessageSquare, RefreshCw, Edit2, Check, X, AlertTriangle } from 'lucide-react';
+import { EmergencyCategory } from '../types';
 
 interface EmergencyPanelProps {
   contextText: string;
+  category: EmergencyCategory;
 }
 
-export const EmergencyPanel: React.FC<EmergencyPanelProps> = ({ contextText }) => {
+export const EmergencyPanel: React.FC<EmergencyPanelProps> = ({ contextText, category }) => {
   const [location, setLocation] = useState<{ lat: number; lng: number } | null>(null);
   const [locLoading, setLocLoading] = useState(false);
   const [locError, setLocError] = useState<string | null>(null);
@@ -87,7 +89,7 @@ export const EmergencyPanel: React.FC<EmergencyPanelProps> = ({ contextText }) =
 
   const getMessageBody = () => {
      const mapLink = location ? `https://www.google.com/maps?q=${location.lat},${location.lng}` : 'Location unavailable';
-     return `🚨 EMERGENCY ALERT 🚨\n\n` +
+     return `🚨 EMERGENCY ALERT (${category.toUpperCase()}) 🚨\n\n` +
       `Negative sentiment detected.\n` +
       `Context: "${contextText.slice(0, 100)}..."\n\n` +
       `Location: ${mapLink}\n\n` +
@@ -111,15 +113,26 @@ export const EmergencyPanel: React.FC<EmergencyPanelProps> = ({ contextText }) =
     window.open(`sms:${adminNumber}?&body=${text}`, '_self'); 
   };
 
+  const showPolice = category === 'Safety' || category === 'General';
+  const showAmbulance = category === 'Health' || category === 'General';
+
   return (
     <div className="mt-6 bg-red-950/30 border border-red-500/50 rounded-xl p-5 animate-pulse-slow">
       <div className="flex items-center gap-3 mb-4">
         <div className="p-2 bg-red-500/20 rounded-lg text-red-400">
-          <ShieldAlert className="w-6 h-6" />
+          {category === 'Health' ? <Ambulance className="w-6 h-6" /> : 
+           category === 'Safety' ? <Siren className="w-6 h-6" /> : 
+           <ShieldAlert className="w-6 h-6" />}
         </div>
         <div>
-          <h3 className="text-lg font-bold text-red-100">Safety Actions Recommended</h3>
-          <p className="text-xs text-red-300">Negative sentiment detected. Quick actions enabled.</p>
+          <h3 className="text-lg font-bold text-red-100">
+            {category === 'Health' ? 'Medical Alert Detected' : 
+             category === 'Safety' ? 'Safety Alert Detected' : 
+             'Safety Actions Recommended'}
+          </h3>
+          <p className="text-xs text-red-300">
+            Negative sentiment detected ({category}). Quick actions enabled.
+          </p>
         </div>
       </div>
 
@@ -149,17 +162,21 @@ export const EmergencyPanel: React.FC<EmergencyPanelProps> = ({ contextText }) =
           )}
         </div>
 
-        {/* Action Grid - Public Services */}
-        <div className="grid grid-cols-2 gap-3">
-          <a href="tel:100" className="flex items-center justify-center gap-2 bg-red-600 hover:bg-red-500 text-white p-3 rounded-lg font-bold transition-colors shadow-lg shadow-red-900/20">
-            <Siren className="w-5 h-5" />
-            <span className="text-sm">Police (100)</span>
-          </a>
+        {/* Action Grid - Public Services - CONDITIONAL RENDERING */}
+        <div className={`grid ${showPolice && showAmbulance ? 'grid-cols-2' : 'grid-cols-1'} gap-3`}>
+          {showPolice && (
+            <a href="tel:100" className="flex items-center justify-center gap-2 bg-red-600 hover:bg-red-500 text-white p-3 rounded-lg font-bold transition-colors shadow-lg shadow-red-900/20">
+              <Siren className="w-5 h-5" />
+              <span className="text-sm">Call Police (100)</span>
+            </a>
+          )}
           
-          <a href="tel:102" className="flex items-center justify-center gap-2 bg-blue-600 hover:bg-blue-500 text-white p-3 rounded-lg font-bold transition-colors shadow-lg shadow-blue-900/20">
-            <Ambulance className="w-5 h-5" />
-            <span className="text-sm">Ambulance (102)</span>
-          </a>
+          {showAmbulance && (
+            <a href="tel:102" className="flex items-center justify-center gap-2 bg-blue-600 hover:bg-blue-500 text-white p-3 rounded-lg font-bold transition-colors shadow-lg shadow-blue-900/20">
+              <Ambulance className="w-5 h-5" />
+              <span className="text-sm">Call Ambulance (102)</span>
+            </a>
+          )}
         </div>
 
         {/* Admin Contact Section */}

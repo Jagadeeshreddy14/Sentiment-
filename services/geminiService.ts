@@ -27,16 +27,21 @@ const analysisSchema: Schema = {
     transcript: {
       type: Type.STRING,
       description: "The verbatim transcription of the spoken audio or the input text."
+    },
+    emergencyCategory: {
+      type: Type.STRING,
+      enum: ['Health', 'Safety', 'General', 'None'],
+      description: "Classify negative sentiment: 'Health' for medical/injuries, 'Safety' for crime/danger/abuse, 'General' for undefined emergencies, 'None' if not urgent."
     }
   },
-  required: ["sentiment", "score", "keywords", "explanation", "transcript"]
+  required: ["sentiment", "score", "keywords", "explanation", "transcript", "emergencyCategory"]
 };
 
 export const analyzeText = async (text: string): Promise<AnalysisResult> => {
   try {
     const response = await ai.models.generateContent({
       model: "gemini-2.5-flash",
-      contents: `Analyze the sentiment of the following text: "${text}". Return the input text in the 'transcript' field.`,
+      contents: `Analyze the sentiment of the following text: "${text}". Return the input text in the 'transcript' field. If sentiment is Negative, categorize if it requires 'Health' (Ambulance) or 'Safety' (Police) intervention.`,
       config: {
         responseMimeType: "application/json",
         responseSchema: analysisSchema,
@@ -64,7 +69,7 @@ export const analyzeAudio = async (base64Audio: string, mimeType: string): Promi
             }
           },
           {
-            text: "Transcribe the audio to text in the 'transcript' field. Analyze the sentiment of the speaker in this audio clip. Consider tone, pitch, and content."
+            text: "Transcribe audio to 'transcript'. Analyze sentiment. If Negative, classify emergencyCategory as 'Health' (medical), 'Safety' (crime/danger), or 'General'."
           }
         ]
       },
@@ -96,7 +101,8 @@ export const analyzeBatch = async (texts: string[]): Promise<AnalysisResult[]> =
         score: 0,
         keywords: [],
         explanation: "Error processing this row.",
-        transcript: text
+        transcript: text,
+        emergencyCategory: 'None'
       } as AnalysisResult;
     }
   });

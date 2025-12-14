@@ -252,10 +252,9 @@ export const VoiceAnalyzer: React.FC<VoiceAnalyzerProps> = ({ onAnalyzeComplete,
     }
   };
 
-  const handlePlay = () => {
+  const startPlayback = (offset: number) => {
     if (!audioContextRef.current || !audioBuffer) return;
     
-    // Resume context if suspended
     if (audioContextRef.current.state === 'suspended') {
       audioContextRef.current.resume();
     }
@@ -266,10 +265,9 @@ export const VoiceAnalyzer: React.FC<VoiceAnalyzerProps> = ({ onAnalyzeComplete,
     source.buffer = audioBuffer;
 
     const segmentDuration = trimRange.end - trimRange.start;
-    const currentOffset = playbackOffset;
     
-    // If we are at the end, restart from beginning of segment
-    const startOffset = currentOffset >= segmentDuration ? 0 : currentOffset;
+    // If we are at the end (or very close), restart from beginning
+    const startOffset = offset >= segmentDuration - 0.1 ? 0 : offset;
     const playDuration = segmentDuration - startOffset;
 
     if (playDuration <= 0) {
@@ -278,21 +276,23 @@ export const VoiceAnalyzer: React.FC<VoiceAnalyzerProps> = ({ onAnalyzeComplete,
     }
 
     source.connect(audioContextRef.current.destination);
-    // start(when, offset_in_buffer, duration)
     source.start(0, trimRange.start + startOffset, playDuration);
 
     previewSourceRef.current = source;
     startTimeRef.current = audioContextRef.current.currentTime;
     
-    // Update state to playing with correct offset
+    // Update state
     setPlaybackOffset(startOffset);
     setPlaybackState('playing');
 
     source.onended = () => {
-      // Natural end of playback
       setPlaybackState('stopped');
       setPlaybackOffset(0);
     };
+  };
+
+  const handlePlay = () => {
+    startPlayback(playbackOffset);
   };
 
   const handlePause = () => {
@@ -310,6 +310,27 @@ export const VoiceAnalyzer: React.FC<VoiceAnalyzerProps> = ({ onAnalyzeComplete,
     stopPlayback();
     setPlaybackOffset(0);
     setPlaybackState('stopped');
+  };
+
+  const handleSeek = (e: React.MouseEvent<HTMLDivElement>) => {
+    if (!audioBuffer) return;
+    
+    const progressBar = e.currentTarget;
+    const rect = progressBar.getBoundingClientRect();
+    const x = e.clientX - rect.left;
+    const width = rect.width;
+    const percentage = Math.min(Math.max(0, x / width), 1);
+    
+    const duration = trimRange.end - trimRange.start;
+    const newOffset = percentage * duration;
+    
+    setCurrentProgress(newOffset);
+    
+    if (playbackState === 'playing') {
+        startPlayback(newOffset);
+    } else {
+        setPlaybackOffset(newOffset);
+    }
   };
 
   // --- Analysis ---
@@ -471,17 +492,23 @@ export const VoiceAnalyzer: React.FC<VoiceAnalyzerProps> = ({ onAnalyzeComplete,
                     </div>
                   </div>
                   
-                  {/* Progress Bar for Segment Playback */}
+                  {/* Progress Bar for Segment Playback - ENHANCED with scrubbing */}
                   <div className="mt-4 px-1 pt-2 border-t border-white/5">
                       <div className="flex justify-between text-xs text-gray-400 font-mono mb-1">
                           <span>{formatTime(currentProgress)}</span>
                           <span>{formatTime(trimRange.end - trimRange.start)}</span>
                       </div>
-                      <div className="h-1.5 bg-white/10 rounded-full overflow-hidden">
+                      <div 
+                        className="h-2 bg-white/10 rounded-full overflow-hidden cursor-pointer group"
+                        onClick={handleSeek}
+                        title="Click to seek"
+                      >
                           <div 
-                             className="h-full bg-secondary shadow-[0_0_10px_rgba(168,85,247,0.5)] transition-all duration-75 ease-linear"
+                             className="h-full bg-secondary shadow-[0_0_10px_rgba(168,85,247,0.5)] transition-all duration-75 ease-linear group-hover:bg-secondary/80 relative"
                              style={{ width: `${(trimRange.end - trimRange.start) > 0 ? (currentProgress / (trimRange.end - trimRange.start)) * 100 : 0}%` }}
-                          ></div>
+                          >
+                             <div className="absolute right-0 top-0 bottom-0 w-1 bg-white opacity-0 group-hover:opacity-100 transition-opacity" />
+                          </div>
                       </div>
                   </div>
 
@@ -583,7 +610,7 @@ export const VoiceAnalyzer: React.FC<VoiceAnalyzerProps> = ({ onAnalyzeComplete,
           
            {/* Emergency Panel for Negative Sentiment */}
           {result.sentiment === SentimentType.NEGATIVE && (
-            <EmergencyPanel contextText={result.transcript || result.explanation} />
+            <EmergencyPanel contextText={result.transcript || result.explanation} category={result.emergencyCategory} />
           )}
         </div>
       )}

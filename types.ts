@@ -4,12 +4,15 @@ export enum SentimentType {
   NEUTRAL = 'Neutral',
 }
 
+export type EmergencyCategory = 'Health' | 'Safety' | 'General' | 'None';
+
 export interface AnalysisResult {
   sentiment: SentimentType;
   score: number; // 0 to 1 confidence
   keywords: string[];
   explanation: string;
   transcript?: string;
+  emergencyCategory: EmergencyCategory;
 }
 
 export interface DatasetRow {
