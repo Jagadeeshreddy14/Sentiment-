@@ -23,16 +23,20 @@ const analysisSchema: Schema = {
     explanation: {
       type: Type.STRING,
       description: "A brief explanation of why this sentiment was chosen."
+    },
+    transcript: {
+      type: Type.STRING,
+      description: "The verbatim transcription of the spoken audio or the input text."
     }
   },
-  required: ["sentiment", "score", "keywords", "explanation"]
+  required: ["sentiment", "score", "keywords", "explanation", "transcript"]
 };
 
 export const analyzeText = async (text: string): Promise<AnalysisResult> => {
   try {
     const response = await ai.models.generateContent({
       model: "gemini-2.5-flash",
-      contents: `Analyze the sentiment of the following text: "${text}"`,
+      contents: `Analyze the sentiment of the following text: "${text}". Return the input text in the 'transcript' field.`,
       config: {
         responseMimeType: "application/json",
         responseSchema: analysisSchema,
@@ -60,7 +64,7 @@ export const analyzeAudio = async (base64Audio: string, mimeType: string): Promi
             }
           },
           {
-            text: "Analyze the sentiment of the speaker in this audio clip. Consider tone, pitch, and content."
+            text: "Transcribe the audio to text in the 'transcript' field. Analyze the sentiment of the speaker in this audio clip. Consider tone, pitch, and content."
           }
         ]
       },
@@ -91,7 +95,8 @@ export const analyzeBatch = async (texts: string[]): Promise<AnalysisResult[]> =
         sentiment: SentimentType.NEUTRAL,
         score: 0,
         keywords: [],
-        explanation: "Error processing this row."
+        explanation: "Error processing this row.",
+        transcript: text
       } as AnalysisResult;
     }
   });

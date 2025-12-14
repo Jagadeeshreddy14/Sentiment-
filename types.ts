@@ -9,6 +9,7 @@ export interface AnalysisResult {
   score: number; // 0 to 1 confidence
   keywords: string[];
   explanation: string;
+  transcript?: string;
 }
 
 export interface DatasetRow {

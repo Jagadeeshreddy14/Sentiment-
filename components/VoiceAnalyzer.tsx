@@ -1,5 +1,5 @@
 import React, { useState, useRef, useEffect } from 'react';
-import { Mic, Square, Upload, Loader2, Volume2, Scissors, Play, Pause, RotateCcw, StopCircle } from 'lucide-react';
+import { Mic, Square, Upload, Loader2, Volume2, Scissors, Play, Pause, RotateCcw, StopCircle, Quote } from 'lucide-react';
 import { analyzeAudio } from '../services/geminiService';
 import { AnalysisResult, SentimentType } from '../types';
 import { EmergencyPanel } from './EmergencyPanel';
@@ -80,7 +80,8 @@ export const VoiceAnalyzer: React.FC<VoiceAnalyzerProps> = ({ onAnalyzeComplete,
   // Playback state management
   const [playbackState, setPlaybackState] = useState<'playing' | 'paused' | 'stopped'>('stopped');
   const [playbackOffset, setPlaybackOffset] = useState(0); // Offset in seconds relative to trimRange.start
-  
+  const [currentProgress, setCurrentProgress] = useState(0); // Visual progress for progress bar
+
   const [loading, setLoading] = useState(false);
   const [result, setResult] = useState<AnalysisResult | null>(null);
   
@@ -141,9 +142,39 @@ export const VoiceAnalyzer: React.FC<VoiceAnalyzerProps> = ({ onAnalyzeComplete,
     }
   }, [trimRange.start, trimRange.end]);
 
+  // Animation loop for progress bar
+  useEffect(() => {
+    let animationFrameId: number;
+
+    const updateUI = () => {
+      if (playbackState === 'playing' && audioContextRef.current) {
+        const elapsed = audioContextRef.current.currentTime - startTimeRef.current;
+        const current = playbackOffset + elapsed;
+        const duration = trimRange.end - trimRange.start;
+        
+        // Clamp and update
+        setCurrentProgress(Math.min(Math.max(0, current), duration));
+        
+        if (current < duration) {
+           animationFrameId = requestAnimationFrame(updateUI);
+        }
+      }
+    };
+
+    if (playbackState === 'playing') {
+      updateUI();
+    } else {
+      // When paused or stopped, ensure visuals match the offset
+      setCurrentProgress(playbackOffset);
+    }
+
+    return () => cancelAnimationFrame(animationFrameId);
+  }, [playbackState, playbackOffset, trimRange]);
+
   const resetPlaybackState = () => {
     setPlaybackState('stopped');
     setPlaybackOffset(0);
+    setCurrentProgress(0);
     if (previewSourceRef.current) {
       try {
         previewSourceRef.current.onended = null;
@@ -440,8 +471,22 @@ export const VoiceAnalyzer: React.FC<VoiceAnalyzerProps> = ({ onAnalyzeComplete,
                     </div>
                   </div>
                   
+                  {/* Progress Bar for Segment Playback */}
+                  <div className="mt-4 px-1 pt-2 border-t border-white/5">
+                      <div className="flex justify-between text-xs text-gray-400 font-mono mb-1">
+                          <span>{formatTime(currentProgress)}</span>
+                          <span>{formatTime(trimRange.end - trimRange.start)}</span>
+                      </div>
+                      <div className="h-1.5 bg-white/10 rounded-full overflow-hidden">
+                          <div 
+                             className="h-full bg-secondary shadow-[0_0_10px_rgba(168,85,247,0.5)] transition-all duration-75 ease-linear"
+                             style={{ width: `${(trimRange.end - trimRange.start) > 0 ? (currentProgress / (trimRange.end - trimRange.start)) * 100 : 0}%` }}
+                          ></div>
+                      </div>
+                  </div>
+
                   {/* Playback Controls */}
-                  <div className="flex justify-center gap-4 pt-2 border-t border-white/5 mt-4">
+                  <div className="flex justify-center gap-4 pt-4">
                     <button 
                       onClick={handlePlay}
                       disabled={playbackState === 'playing'}
@@ -511,6 +556,16 @@ export const VoiceAnalyzer: React.FC<VoiceAnalyzerProps> = ({ onAnalyzeComplete,
           </div>
           
           <div className="space-y-4">
+            {result.transcript && (
+              <div className="bg-black/20 rounded-xl p-4 border border-white/5">
+                <div className="flex items-center gap-2 mb-2 text-secondary/80">
+                  <Quote className="w-4 h-4" />
+                  <h4 className="text-sm font-semibold uppercase tracking-wide">Transcript</h4>
+                </div>
+                <p className="opacity-90 italic text-gray-200 leading-relaxed font-serif text-lg">"{result.transcript}"</p>
+              </div>
+            )}
+
             <div className="bg-black/20 rounded-xl p-4">
               <h4 className="text-sm font-semibold mb-2 opacity-90">Audio Profile</h4>
               <p className="opacity-80 leading-relaxed">{result.explanation}</p>
@@ -528,7 +583,7 @@ export const VoiceAnalyzer: React.FC<VoiceAnalyzerProps> = ({ onAnalyzeComplete,
           
            {/* Emergency Panel for Negative Sentiment */}
           {result.sentiment === SentimentType.NEGATIVE && (
-            <EmergencyPanel contextText={result.explanation} />
+            <EmergencyPanel contextText={result.transcript || result.explanation} />
           )}
         </div>
       )}

@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { Siren, Ambulance, ShieldAlert, MapPin, Send, MessageSquare, RefreshCw } from 'lucide-react';
+import { Siren, Ambulance, ShieldAlert, MapPin, Send, MessageSquare, RefreshCw, Edit2, Check, X } from 'lucide-react';
 
 interface EmergencyPanelProps {
   contextText: string;
@@ -9,7 +9,16 @@ export const EmergencyPanel: React.FC<EmergencyPanelProps> = ({ contextText }) =
   const [location, setLocation] = useState<{ lat: number; lng: number } | null>(null);
   const [locLoading, setLocLoading] = useState(false);
   const [locError, setLocError] = useState<string | null>(null);
-  const [adminNumber, setAdminNumber] = useState('8074563501'); 
+  
+  // Persist admin number in localStorage
+  const [adminNumber, setAdminNumber] = useState(() => {
+    if (typeof window !== 'undefined') {
+      return localStorage.getItem('sentimind_admin_number') || '8074563501';
+    }
+    return '8074563501';
+  });
+  const [isEditing, setIsEditing] = useState(false);
+  const [tempNumber, setTempNumber] = useState(adminNumber);
 
   const fetchLocation = () => {
     setLocLoading(true);
@@ -62,6 +71,19 @@ export const EmergencyPanel: React.FC<EmergencyPanelProps> = ({ contextText }) =
   useEffect(() => {
     fetchLocation();
   }, []);
+
+  const handleSaveNumber = () => {
+    if (tempNumber.trim()) {
+      setAdminNumber(tempNumber);
+      localStorage.setItem('sentimind_admin_number', tempNumber);
+      setIsEditing(false);
+    }
+  };
+
+  const handleCancelEdit = () => {
+    setTempNumber(adminNumber);
+    setIsEditing(false);
+  };
 
   const getMessageBody = () => {
      const mapLink = location ? `https://www.google.com/maps?q=${location.lat},${location.lng}` : 'Location unavailable';
@@ -142,22 +164,57 @@ export const EmergencyPanel: React.FC<EmergencyPanelProps> = ({ contextText }) =
 
         {/* Admin Contact Section */}
         <div className="pt-4 border-t border-red-500/20 space-y-3">
-           <div className="flex flex-col gap-1">
-             <label className="text-xs text-red-300">Admin / Emergency Contact</label>
-             <input 
-                type="text" 
-                value={adminNumber} 
-                onChange={(e) => setAdminNumber(e.target.value)}
-                className="w-full bg-black/40 border border-red-500/30 rounded-lg px-3 py-2 text-sm text-white focus:border-red-500 outline-none placeholder-red-500/30"
-                placeholder="Enter Mobile Number"
-             />
+           <div className="flex flex-col gap-2">
+             <div className="flex items-center justify-between">
+               <label className="text-xs text-red-300 font-medium">Admin / Emergency Contact</label>
+               {!isEditing && (
+                 <button 
+                   onClick={() => setIsEditing(true)} 
+                   className="text-red-400 hover:text-red-200 transition-colors p-1"
+                   title="Edit Number"
+                 >
+                   <Edit2 className="w-3 h-3" />
+                 </button>
+               )}
+             </div>
+
+             {isEditing ? (
+               <div className="flex gap-2">
+                 <input 
+                    type="text" 
+                    value={tempNumber} 
+                    onChange={(e) => setTempNumber(e.target.value)}
+                    className="flex-1 bg-black/40 border border-red-500/30 rounded-lg px-3 py-2 text-sm text-white focus:border-red-500 outline-none placeholder-red-500/30"
+                    placeholder="Enter Mobile Number"
+                    autoFocus
+                 />
+                 <button 
+                   onClick={handleSaveNumber}
+                   className="p-2 bg-green-500/20 hover:bg-green-500/30 text-green-400 rounded-lg border border-green-500/30 transition-colors"
+                   title="Save"
+                 >
+                   <Check className="w-4 h-4" />
+                 </button>
+                 <button 
+                   onClick={handleCancelEdit}
+                   className="p-2 bg-red-500/20 hover:bg-red-500/30 text-red-400 rounded-lg border border-red-500/30 transition-colors"
+                   title="Cancel"
+                 >
+                   <X className="w-4 h-4" />
+                 </button>
+               </div>
+             ) : (
+               <div className="w-full bg-black/20 border border-red-500/10 rounded-lg px-3 py-2 text-sm text-gray-300 font-mono tracking-wide">
+                 {adminNumber}
+               </div>
+             )}
            </div>
            
-           <div className="grid grid-cols-2 gap-3">
+           <div className="grid grid-cols-2 gap-3 mt-1">
              <button 
                onClick={handleSendWhatsApp}
                className="flex items-center justify-center gap-2 bg-green-600 hover:bg-green-500 text-white py-2.5 rounded-lg text-sm font-bold transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
-               disabled={!adminNumber}
+               disabled={!adminNumber || isEditing}
              >
                <Send className="w-4 h-4" />
                WhatsApp
@@ -165,7 +222,7 @@ export const EmergencyPanel: React.FC<EmergencyPanelProps> = ({ contextText }) =
              <button 
                onClick={handleSendSMS}
                className="flex items-center justify-center gap-2 bg-slate-700 hover:bg-slate-600 text-white py-2.5 rounded-lg text-sm font-bold transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
-               disabled={!adminNumber}
+               disabled={!adminNumber || isEditing}
              >
                <MessageSquare className="w-4 h-4" />
                SMS
